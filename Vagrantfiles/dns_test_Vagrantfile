@@ -1,0 +1,78 @@
+Vagrant.configure("2") do |config|
+  config.vm.network "public_network", type: "dhcp", bridge: "eno1"
+
+  # I don't need this plugin, really, and precise64 bails on it anyway
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false
+  end
+
+  # 20.04 Focal Fossa
+  config.vm.define "focal" do |focal|
+    focal.vm.box = "ubuntu/focal64"
+    focal.vm.hostname = "vagrant-focal"
+    focal.vm.provision "shell", inline: "sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y"
+  end
+
+  # 18.04 Bionic Beaver
+  config.vm.define "bionic" do |bionic|
+    bionic.vm.box = "ubuntu/bionic64"
+    bionic.vm.hostname = "vagrant-bionic"
+    bionic.vm.provision "shell", inline: "sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y"
+  end
+
+  # 16.04 Xenial Xerus
+  config.vm.define "xenial" do |xenial|
+    xenial.vm.box = "ubuntu/xenial64"
+    xenial.vm.hostname = "vagrant-xenial"
+    xenial.vm.provision "shell", inline: "sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y"
+  end
+
+  # 14.04 Trusty Tahir
+  config.vm.define "trusty" do |trusty|
+    trusty.vm.box = "ubuntu/trusty64"
+    trusty.vm.hostname = "vagrant-trusty"
+    trusty.vm.provision "shell", inline: "sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get dist-upgrade -y"
+  end
+
+  # 12.04 Precise Pangolin
+  config.vm.define "precise" do |precise|
+    precise.vm.box = "hashicorp/precise64"
+    precise.vm.hostname = "vagrant-precise"
+    precise.vm.provision "shell", inline: <<-SHELL
+        # Grub is not going to work this way, and will have to be manually run
+        #   and install it to main VDISK instaed of first partition
+	# Disable any "extra" repos
+	for foo in $(ls /etc/apt/apt.sources.d/*); do mv $foo{,.disabled}; done
+	cp -vurp /etc/apt/sources.list /etc/apt/sources.list.old-vagrant-backup
+ 	sed -i -re 's/([a-z]{2}\.)?archive.ubuntu.com|security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+	apt-get update
+	apt-get upgrade -y
+	apt-get dist upgrade -y
+        # When the screen goes kablooey, type "reset" to get the terminal back
+    SHELL
+  end
+
+end
+
+# vagrant up supports parallel VM start with the key --parallel:
+#   --[no-]parallel Enable or disable parallelism if provider supports it
+# 
+# Default vagrant provider VirtualBox doesn't support it, but you can start your 
+#   VMs simultaneously using xargs, which supports parallel command execution with 
+#   the key -P <max-procs> (example provided exactly for your Vagrantfile):
+# grep config.vm.define Vagrantfile | awk -F'"' '{print $2}' | xargs -P5 -I {} vagrant up {}
+
+# To Run commands on multiple instances, you have to do
+# COMMAND='lsb_release -a'
+# for foo in $(vagrant status --machine-readable | grep 'provider,')
+# do 
+# 	bar=$(echo $foo | awk -F, '{print $2}')
+#	echo -e "\033[33m$bar\033[\0m"
+#	vagrant ssh -c "$COMMAND" $bar
+# done
+# 
+# Or as one line:
+# 
+# COMMAND='systemd-resolve --status | grep Servers'; for foo in $(vagrant status --machine-readable | grep 'provider,'); do bar=$(echo $foo | awk -F, '{print $2}'); echo -e "\033[33m$bar \033[\0m"; vagrant ssh -c "$COMMAND" $bar; done
+i
+

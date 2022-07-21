@@ -1,0 +1,27 @@
+Vagrant.configure("2") do |config|
+  # Jenkins 20.04 Focal Fossa
+  config.vm.define "jenkins" do |jenkins|
+    jenkins.vm.network "public_network", type: "dhcp", bridge: "eno1"
+    jenkins.vm.network "private_network", ip: "192.168.56.2"
+    jenkins.vm.network "forwarded_port", guest: 8080, host: 8081
+    jenkins.vm.box = "ubuntu/focal64"
+    jenkins.vm.hostname = "vagrant-jenkins"
+    jenkins.vm.provision "shell", inline: <<-SHELL
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io.key | \
+                sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+        echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/ | \
+                sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/nullsudo apt update
+        sudo apt update     
+        sudo apt install -y fontconfig openjdk-11-jre
+        sudo apt install -y jenkins
+        echo "JENKINS ADMIN PASS:"
+	sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+    SHELL
+  end
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 2048
+    v.cpus = 2
+  end
+end
+# https://www.reddit.com/r/devops/comments/ucg2yp/how_to_learn_jenkins/
